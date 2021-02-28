@@ -1,12 +1,13 @@
 import React, { useRef, useEffect } from 'react';
 import { Table, Button } from 'antd'
+
 import { ipcRenderer, remote } from "electron";
 import './index.less'
 const { BrowserWindow } = remote
 function uuid() {
-	return "00000000-0000-4000-8000-000000000000".replace(/0/g, function () {
-		return (0 | (Math.random() * 16)).toString(16);
-	});
+    return "00000000-0000-4000-8000-000000000000".replace(/0/g, function () {
+        return (0 | (Math.random() * 16)).toString(16);
+    });
 }
 
 const App = () => {
@@ -20,7 +21,7 @@ const App = () => {
                     nodeIntegration: true,
                     webSecurity: false,
                     enableRemoteModule: true
-                  },
+                },
             })
             ref.current.loadURL('http://localhost:4000/config');
         }}>弹框</Button>
@@ -30,15 +31,23 @@ const App = () => {
 }
 
 class Option extends React.Component<any, {
-    dataSource: any[],
+    simpleDataSource: any[],
+    source: {
+
+    }
 }>{
-    columns:any[]
+    columns: any[]
+    dataSource: any[]
     constructor(props: any) {
         super(props);
         this.state = {
-            dataSource: []
+            simpleDataSource: [],
+            source: {
+
+            }
         }
-        this.columns = [ {
+        this.dataSource = []
+        this.columns = [{
             title: 'method',
             dataIndex: 'method',
             key: 'method',
@@ -58,16 +67,18 @@ class Option extends React.Component<any, {
         ipcRenderer.on('main-process-messages', (event, request: {
             method: string,
             hostname: string,
-            path: string
+            path: string,
+            id: string
         }) => {
             console.log(request)
             this.setState(
                 (state) => {
                     return {
-                        dataSource: [
-                            ...state.dataSource,
+                        simpleDataSource: [
+                            ...state.simpleDataSource,
                             {
-                                key:uuid(),
+                                key: request.id,
+                                id: request.id,
                                 method: request.method,
                                 hostname: request.hostname,
                                 path: request.path,
@@ -80,16 +91,29 @@ class Option extends React.Component<any, {
         })
 
         ipcRenderer.on('main-process-messages-req', (event, request) => {
-            console.log(request)
+            this.dataSource.push(request)
         })
 
         ipcRenderer.on('main-process-messages-res', (event, request) => {
-            console.log(request)
+            this.dataSource.push(request)
         })
     }
+    
+    onRow=(record:any)=>{
+        return {
+            onClick: ()=>{
+                console.log(record.id,this.dataSource)
+            }
+        }
+    }
+    onClick = ()=>{}
     render() {
         return <div>
-            <Table dataSource={this.state.dataSource} columns={this.columns} pagination={false} />
+            <Table dataSource={this.state.simpleDataSource} columns={this.columns} pagination={false}
+                className='main-table'
+                onRow={this.onRow}
+            />
+
         </div>
     }
 }
